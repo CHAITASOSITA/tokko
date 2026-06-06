@@ -1,61 +1,396 @@
+bash
+
+cat > /tmp/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tokko Dashboard</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0f0f0f; color: #f0f0f0; font-family: sans-serif; padding: 24px; }
-    h1 { color: #e8c547; margin-bottom: 24px; }
-    input { background: #1c1c1c; border: 1px solid #2a2a2a; color: white; padding: 12px; border-radius: 8px; width: 100%; max-width: 400px; font-size: 14px; }
-    button { background: #e8c547; color: black; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; }
-    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 24px; }
-    .card { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 10px; overflow: hidden; }
-    .card img { width: 100%; height: 130px; object-fit: cover; }
-    .card-body { padding: 12px; }
-    .address { font-weight: 600; font-size: 13px; }
-    .price { color: #e8c547; font-weight: 700; margin-top: 6px; }
-    .error { color: #e05c5c; margin-top: 12px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tokko Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f0f0f; color: #f0f0f0; font-family: 'Segoe UI', sans-serif; }
+.login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.login-box { background: #161616; border: 1px solid #2a2a2a; border-radius: 16px; padding: 40px; max-width: 440px; width: 100%; }
+.login-box h1 { color: #e8c547; font-size: 24px; margin-bottom: 8px; }
+.login-box p { color: #777; font-size: 13px; margin-bottom: 24px; }
+input[type=password], input[type=text] { background: #1c1c1c; border: 1px solid #2a2a2a; color: white; padding: 12px 14px; border-radius: 8px; width: 100%; font-size: 14px; outline: none; }
+.btn { background: #e8c547; color: #000; border: none; padding: 13px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 12px; font-size: 14px; }
+.btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
+.error { color: #e05c5c; font-size: 13px; margin-top: 10px; }
+.success { color: #4caf82; font-size: 13px; margin-top: 10px; }
+
+/* Dashboard */
+#dashboard { display: none; }
+.header { background: #0f0f0f; border-bottom: 1px solid #2a2a2a; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.header h1 { color: #e8c547; font-size: 18px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf82; }
+.logout { background: none; border: 1px solid #2a2a2a; color: #777; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+.tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid #2a2a2a; background: #0f0f0f; position: sticky; top: 49px; z-index: 9; }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; color: #777; padding: 12px 16px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: -1px; }
+.tab.active { color: #e8c547; border-bottom-color: #e8c547; }
+
+.content { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 12px; padding: 18px 22px; }
+.stat-label { color: #777; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 700; }
+
+/* Filters */
+.filters { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.filters input { flex: 1 1 200px; max-width: 300px; }
+.filter-btn { background: #1c1c1c; border: 1px solid #2a2a2a; color: #777; padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.filter-btn.active { background: #e8c547; color: #000; border-color: #e8c547; }
+
+/* Grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.card { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 10px; overflow: hidden; }
+.card img { width: 100%; height: 130px; object-fit: cover; display: block; }
+.card-img-placeholder { height: 130px; background: #242424; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.card-body { padding: 11px 13px; }
+.card-address { font-weight: 600; font-size: 12px; margin-bottom: 3px; }
+.card-location { color: #777; font-size: 11px; margin-bottom: 6px; }
+.card-price { color: #e8c547; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #2a2a2a; color: #777; }
+.tag-green { background: #4caf8222; color: #4caf82; border: 1px solid #4caf8244; }
+.tag-blue { background: #5b9cf622; color: #5b9cf6; border: 1px solid #5b9cf644; }
+.tag-red { background: #e05c5c22; color: #e05c5c; border: 1px solid #e05c5c44; }
+
+/* Contacts */
+.contact-list { display: flex; flex-direction: column; gap: 10px; }
+.contact-card { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.contact-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e8c54722; color: #e8c547; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contact-info { flex: 1; }
+.contact-name { font-weight: 600; font-size: 14px; }
+.contact-detail { color: #777; font-size: 12px; margin-top: 2px; }
+.contact-date { color: #777; font-size: 11px; white-space: nowrap; }
+.contact-warning { color: #e05c5c; font-size: 11px; margin-top: 3px; }
+
+.loading { text-align: center; padding: 48px; color: #777; }
+.spinner { width: 32px; height: 32px; border: 3px solid #2a2a2a; border-top-color: #e8c547; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 60px; color: #555; }
+.count { color: #777; font-size: 12px; margin-bottom: 16px; }
+</style>
 </head>
 <body>
-  <h1>🏢 TOKKO DASHBOARD</h1>
-  <input type="password" id="apikey" placeholder="Pegá tu API Key de Tokko..." />
-  <br>
-  <button onclick="conectar()">Conectar</button>
-  <div class="error" id="error"></div>
-  <div id="grid"></div>
 
-  <script>
-    async function conectar() {
-      const key = document.getElementById('apikey').value.trim();
-      if (!key) return;
-      document.getElementById('error').textContent = 'Cargando...';
-      document.getElementById('grid').innerHTML = '';
-      try {
-        const res = await fetch('/api/tokko?key=' + key);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        const props = data.objects || [];
-        document.getElementById('error').textContent = props.length + ' propiedades cargadas';
-        document.getElementById('grid').innerHTML = props.map(p => {
-          const op = p.operations?.[0];
-          const price = op?.prices?.[0];
-          const img = p.photos?.[0]?.thumb || p.photos?.[0]?.image || '';
-          return `<div class="card">
-            ${img ? `<img src="${img}" onerror="this.style.display='none'">` : ''}
-            <div class="card-body">
-              <div class="address">${p.address || 'Sin dirección'}</div>
-              <div style="color:#777;font-size:11px">${p.location?.name || ''}</div>
-              ${price ? `<div class="price">${price.currency} ${Number(price.price).toLocaleString('es-AR')}</div>` : ''}
-            </div>
-          </div>`;
-        }).join('');
-      } catch(e) {
-        document.getElementById('error').textContent = '⚠️ ' + e.message;
-      }
+<!-- LOGIN -->
+<div class="login" id="loginScreen">
+  <div class="login-box">
+    <h1>🏢 TOKKO DASHBOARD</h1>
+    <p>Ingresá tu API Key de Tokko Broker para acceder a tu cartera, contactos y estadísticas.</p>
+    <label style="color:#f0f0f0;font-size:12px;font-weight:600;display:block;margin-bottom:8px">API KEY</label>
+    <input type="password" id="apiInput" placeholder="Pegá tu API key aquí..." onkeydown="if(event.key==='Enter')conectar()">
+    <button class="btn" onclick="conectar()" id="connectBtn">Conectar →</button>
+    <div id="loginMsg"></div>
+    <p style="color:#444;font-size:11px;margin-top:16px;text-align:center">Tu API key no se almacena.</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="header">
+    <h1>🏢 TOKKO DASHBOARD</h1>
+    <div class="header-right">
+      <div class="dot"></div>
+      <span style="color:#777;font-size:12px">Conectado</span>
+      <button class="logout" onclick="desconectar()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('propiedades')">🏠 Propiedades</button>
+    <button class="tab" onclick="showTab('contactos')">👥 Contactos</button>
+    <button class="tab" onclick="showTab('estadisticas')">📊 Estadísticas</button>
+  </div>
+
+  <div class="content">
+    <!-- PROPIEDADES -->
+    <div id="tab-propiedades">
+      <div class="stats" id="propStats"></div>
+      <div class="filters">
+        <input type="text" id="propSearch" placeholder="🔍 Buscar dirección o zona..." oninput="renderProps()">
+        <button class="filter-btn active" onclick="setPropFilter('todas',this)">Todas</button>
+        <button class="filter-btn" onclick="setPropFilter('venta',this)">Venta</button>
+        <button class="filter-btn" onclick="setPropFilter('alquiler',this)">Alquiler</button>
+        <button class="filter-btn" onclick="setPropFilter('activa',this)">Activas</button>
+        <button class="filter-btn" onclick="setPropFilter('vendida',this)">Vendidas</button>
+      </div>
+      <div class="count" id="propCount"></div>
+      <div id="propGrid" class="grid"></div>
+    </div>
+
+    <!-- CONTACTOS -->
+    <div id="tab-contactos" style="display:none">
+      <div class="stats" id="contactStats"></div>
+      <div class="filters">
+        <input type="text" id="contactSearch" placeholder="🔍 Buscar nombre o email..." oninput="renderContacts()">
+        <button class="filter-btn active" onclick="setContactFilter('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setContactFilter('frio',this)">⚠️ Sin contacto +90 días</button>
+        <button class="filter-btn" onclick="setContactFilter('reciente',this)">Recientes</button>
+      </div>
+      <div class="count" id="contactCount"></div>
+      <div id="contactList" class="contact-list"></div>
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div id="tab-estadisticas" style="display:none">
+      <div id="statsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = '';
+let allProps = [];
+let allContacts = [];
+let propFilter = 'todas';
+let contactFilter = 'todos';
+
+async function fetchData(endpoint, limit=200) {
+  const res = await fetch(`/api/tokko?key=${API_KEY}&endpoint=${endpoint}&limit=${limit}`);
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+  return res.json();
+}
+
+async function conectar() {
+  const key = document.getElementById('apiInput').value.trim();
+  if (!key) return;
+  API_KEY = key;
+  const btn = document.getElementById('connectBtn');
+  const msg = document.getElementById('loginMsg');
+  btn.disabled = true;
+  btn.textContent = 'Conectando...';
+  msg.innerHTML = '';
+  try {
+    const [propsData, contactsData] = await Promise.all([
+      fetchData('property', 500),
+      fetchData('contact', 500)
+    ]);
+    allProps = propsData.objects || [];
+    allContacts = contactsData.objects || [];
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    renderAll();
+  } catch(e) {
+    msg.innerHTML = `<div class="error">⚠️ ${e.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'Conectar →';
+  }
+}
+
+function desconectar() {
+  API_KEY = ''; allProps = []; allContacts = [];
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('apiInput').value = '';
+  document.getElementById('connectBtn').disabled = false;
+  document.getElementById('connectBtn').textContent = 'Conectar →';
+}
+
+function showTab(tab) {
+  ['propiedades','contactos','estadisticas'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['propiedades','contactos','estadisticas'][i]===tab);
+  });
+}
+
+function renderAll() {
+  renderPropStats();
+  renderProps();
+  renderContactStats();
+  renderContacts();
+  renderStats();
+}
+
+// ── PROPIEDADES ──────────────────────────────────────────────────────────
+function renderPropStats() {
+  const total = allProps.length;
+  const venta = allProps.filter(p => p.operations?.some(o => /venta/i.test(o.operation_type))).length;
+  const alquiler = allProps.filter(p => p.operations?.some(o => /alquiler/i.test(o.operation_type))).length;
+  const activas = allProps.filter(p => p.status === 2 || p.situation === 2).length;
+  document.getElementById('propStats').innerHTML = `
+    ${stat('Total', total, '#e8c547')}
+    ${stat('Venta', venta, '#4caf82')}
+    ${stat('Alquiler', alquiler, '#5b9cf6')}
+    ${stat('Activas', activas, '#4caf82')}
+    ${stat('Inactivas', total-activas, '#777')}
+  `;
+}
+
+function stat(label, value, color) {
+  return `<div class="stat"><div class="stat-label">${label}</div><div class="stat-value" style="color:${color}">${value}</div></div>`;
+}
+
+function setPropFilter(f, btn) {
+  propFilter = f;
+  document.querySelectorAll('#tab-propiedades .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProps();
+}
+
+function renderProps() {
+  const search = document.getElementById('propSearch').value.toLowerCase();
+  let props = allProps.filter(p => {
+    const txt = !search || (p.address||'').toLowerCase().includes(search) || (p.location?.name||'').toLowerCase().includes(search);
+    let op = true;
+    if (propFilter === 'venta') op = p.operations?.some(o => /venta/i.test(o.operation_type));
+    if (propFilter === 'alquiler') op = p.operations?.some(o => /alquiler/i.test(o.operation_type));
+    if (propFilter === 'activa') op = p.status === 2 || p.situation === 2;
+    if (propFilter === 'vendida') op = p.status === 3 || p.situation === 3;
+    return txt && op;
+  });
+  document.getElementById('propCount').textContent = `${props.length} propiedades`;
+  document.getElementById('propGrid').innerHTML = props.map(p => {
+    const op = p.operations?.[0];
+    const price = op?.prices?.[0];
+    const img = p.photos?.[0]?.thumb || p.photos?.[0]?.image || '';
+    const opType = op?.operation_type || '';
+    return `<div class="card">
+      ${img ? `<img src="${img}" onerror="this.style.display='none'">` : '<div class="card-img-placeholder">🏠</div>'}
+      <div class="card-body">
+        <div class="card-address">${p.address || 'Sin dirección'}</div>
+        <div class="card-location">${p.location?.short_location || p.location?.name || ''}</div>
+        ${price ? `<div class="card-price">${price.currency} ${Number(price.price).toLocaleString('es-AR')}</div>` : ''}
+        <div class="card-tags">
+          ${p.room_amount > 0 ? `<span class="tag">${p.room_amount} amb.</span>` : ''}
+          ${p.total_surface > 0 ? `<span class="tag">${p.total_surface} m²</span>` : ''}
+          ${opType ? `<span class="tag tag-green">${opType}</span>` : ''}
+          ${p.type?.name ? `<span class="tag tag-blue">${p.type.name}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Sin resultados</div>';
+}
+
+// ── CONTACTOS ────────────────────────────────────────────────────────────
+function renderContactStats() {
+  const total = allContacts.length;
+  const now = new Date();
+  const frios = allContacts.filter(c => {
+    if (!c.created) return false;
+    const dias = (now - new Date(c.created)) / (1000*60*60*24);
+    return dias > 90;
+  }).length;
+  const recientes = allContacts.filter(c => {
+    if (!c.created) return false;
+    const dias = (now - new Date(c.created)) / (1000*60*60*24);
+    return dias <= 30;
+  }).length;
+  document.getElementById('contactStats').innerHTML = `
+    ${stat('Total contactos', total, '#e8c547')}
+    ${stat('Últimos 30 días', recientes, '#4caf82')}
+    ${stat('Sin contacto +90 días', frios, '#e05c5c')}
+  `;
+}
+
+function setContactFilter(f, btn) {
+  contactFilter = f;
+  document.querySelectorAll('#tab-contactos .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderContacts();
+}
+
+function renderContacts() {
+  const search = document.getElementById('contactSearch').value.toLowerCase();
+  const now = new Date();
+  let contacts = allContacts.filter(c => {
+    const txt = !search || (c.first_name||'').toLowerCase().includes(search) || (c.last_name||'').toLowerCase().includes(search) || (c.email||'').toLowerCase().includes(search);
+    let f = true;
+    if (contactFilter === 'frio') {
+      const dias = c.created ? (now - new Date(c.created)) / (1000*60*60*24) : 999;
+      f = dias > 90;
     }
-  </script>
+    if (contactFilter === 'reciente') {
+      const dias = c.created ? (now - new Date(c.created)) / (1000*60*60*24) : 999;
+      f = dias <= 30;
+    }
+    return txt && f;
+  });
+  document.getElementById('contactCount').textContent = `${contacts.length} contactos`;
+  document.getElementById('contactList').innerHTML = contacts.map(c => {
+    const nombre = `${c.first_name||''} ${c.last_name||''}`.trim() || 'Sin nombre';
+    const inicial = nombre[0]?.toUpperCase() || '?';
+    const fecha = c.created ? new Date(c.created).toLocaleDateString('es-AR') : '';
+    const dias = c.created ? Math.floor((now - new Date(c.created)) / (1000*60*60*24)) : null;
+    const frio = dias !== null && dias > 90;
+    return `<div class="contact-card">
+      <div class="contact-avatar">${inicial}</div>
+      <div class="contact-info">
+        <div class="contact-name">${nombre}</div>
+        <div class="contact-detail">${c.email || 'Sin email'}${c.phone ? ' · '+c.phone : ''}</div>
+        ${frio ? `<div class="contact-warning">⚠️ Sin contacto hace ${dias} días</div>` : ''}
+      </div>
+      ${fecha ? `<div class="contact-date">${fecha}</div>` : ''}
+    </div>`;
+  }).join('') || '<div class="empty">Sin resultados</div>';
+}
+
+// ── ESTADÍSTICAS ─────────────────────────────────────────────────────────
+function renderStats() {
+  const now = new Date();
+  const total = allProps.length;
+  const porTipo = {};
+  const porZona = {};
+  allProps.forEach(p => {
+    const tipo = p.type?.name || 'Sin tipo';
+    porTipo[tipo] = (porTipo[tipo]||0) + 1;
+    const zona = p.location?.name || 'Sin zona';
+    porZona[zona] = (porZona[zona]||0) + 1;
+  });
+  const topTipos = Object.entries(porTipo).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const topZonas = Object.entries(porZona).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  document.getElementById('statsContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;padding:20px">
+        <h3 style="color:#e8c547;margin-bottom:16px;font-size:14px">Por tipo de propiedad</h3>
+        ${topTipos.map(([tipo,n]) => `
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;align-items:center">
+            <span style="font-size:13px">${tipo}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:${Math.round(n/total*120)}px;height:6px;background:#e8c547;border-radius:3px"></div>
+              <span style="color:#e8c547;font-weight:700;font-size:13px">${n}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;padding:20px">
+        <h3 style="color:#5b9cf6;margin-bottom:16px;font-size:14px">Por zona</h3>
+        ${topZonas.map(([zona,n]) => `
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;align-items:center">
+            <span style="font-size:13px">${zona}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:${Math.round(n/total*120)}px;height:6px;background:#5b9cf6;border-radius:3px"></div>
+              <span style="color:#5b9cf6;font-weight:700;font-size:13px">${n}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;padding:20px">
+      <h3 style="color:#4caf82;margin-bottom:16px;font-size:14px">Resumen general</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        ${stat('Total propiedades', allProps.length, '#e8c547')}
+        ${stat('Total contactos', allContacts.length, '#5b9cf6')}
+        ${stat('Propiedades en venta', allProps.filter(p=>p.operations?.some(o=>/venta/i.test(o.operation_type))).length, '#4caf82')}
+        ${stat('Propiedades en alquiler', allProps.filter(p=>p.operations?.some(o=>/alquiler/i.test(o.operation_type))).length, '#5b9cf6')}
+        ${stat('Contactos sin seguimiento', allContacts.filter(c=>{const d=c.created?(now-new Date(c.created))/(1000*60*60*24):999;return d>90;}).length, '#e05c5c')}
+      </div>
+    </div>
+  `;
+}
+</script>
 </body>
 </html>
+HTMLEOF
+echo "done"
+Salida
+
+done
