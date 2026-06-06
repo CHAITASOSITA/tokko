@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tokko Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f0f0f; color: #f0f0f0; font-family: sans-serif; padding: 24px; }
+    h1 { color: #e8c547; margin-bottom: 24px; }
+    input { background: #1c1c1c; border: 1px solid #2a2a2a; color: white; padding: 12px; border-radius: 8px; width: 100%; max-width: 400px; font-size: 14px; }
+    button { background: #e8c547; color: black; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 24px; }
+    .card { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 10px; overflow: hidden; }
+    .card img { width: 100%; height: 130px; object-fit: cover; }
+    .card-body { padding: 12px; }
+    .address { font-weight: 600; font-size: 13px; }
+    .price { color: #e8c547; font-weight: 700; margin-top: 6px; }
+    .error { color: #e05c5c; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>🏢 TOKKO DASHBOARD</h1>
+  <input type="password" id="apikey" placeholder="Pegá tu API Key de Tokko..." />
+  <br>
+  <button onclick="conectar()">Conectar</button>
+  <div class="error" id="error"></div>
+  <div id="grid"></div>
+
+  <script>
+    async function conectar() {
+      const key = document.getElementById('apikey').value.trim();
+      if (!key) return;
+      document.getElementById('error').textContent = 'Cargando...';
+      document.getElementById('grid').innerHTML = '';
+      try {
+        const res = await fetch('/api/tokko?key=' + key);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        const props = data.objects || [];
+        document.getElementById('error').textContent = props.length + ' propiedades cargadas';
+        document.getElementById('grid').innerHTML = props.map(p => {
+          const op = p.operations?.[0];
+          const price = op?.prices?.[0];
+          const img = p.photos?.[0]?.thumb || p.photos?.[0]?.image || '';
+          return `<div class="card">
+            ${img ? `<img src="${img}" onerror="this.style.display='none'">` : ''}
+            <div class="card-body">
+              <div class="address">${p.address || 'Sin dirección'}</div>
+              <div style="color:#777;font-size:11px">${p.location?.name || ''}</div>
+              ${price ? `<div class="price">${price.currency} ${Number(price.price).toLocaleString('es-AR')}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      } catch(e) {
+        document.getElementById('error').textContent = '⚠️ ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>
