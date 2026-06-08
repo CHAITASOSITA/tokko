@@ -405,7 +405,7 @@ async function fetchAll(endpoint, onProgress) {
   } while (all.length < total);
   return all;
 }
-Avisame con "ok" y te mando el bloque 4.function renderContactStats() {
+function renderContactStats() {
   const frios = allContacts.filter(c=>{const d=daysSince(c.created);return d!==null&&d>90;}).length;
   const recientes = allContacts.filter(c=>{const d=daysSince(c.created);return d!==null&&d<=30;}).length;
   document.getElementById('contactStats').innerHTML =
