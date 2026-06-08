@@ -346,7 +346,7 @@ function renderHome() {
   let valorCartera = 0;
   venta.forEach(p => {
     const pr = p.operations?.find(o=>/venta/i.test(o.operation_type))?.prices?.[0];
-    if (pr && /usd|u\$s|dol/i.test(pr.currency)) valorCartera += Number(pr.price)||0;
+    if (pr && /usd|dol/i.test(pr.currency)) valorCartera += Number(pr.price)||0;
   });
   const frios = allContacts.filter(c => { const d = daysSince(c.created); return d!==null && d>90; });
   document.getElementById('homeStats').innerHTML =
