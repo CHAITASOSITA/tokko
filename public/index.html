@@ -170,7 +170,106 @@ input:focus { border-color: var(--gold); }
   <div class="topbar">
     <div class="brand">
       <span class="name">Castro</span>
-      <span class="tag">Inmobiliaria · Gestión</span> async function conectar() {
+      <span class="tag">Inmobiliaria · Gestión
+      </span>
+    </div>
+    <div class="topbar-right">
+      <div class="status"><div class="dot"></div> Conectado</div>
+      <button class="logout" onclick="desconectar()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('inicio',event)">Resumen</button>
+    <button class="tab" onclick="showTab('propiedades',event)">Propiedades</button>
+    <button class="tab" onclick="showTab('contactos',event)">Contactos</button>
+    <button class="tab" onclick="showTab('estadisticas',event)">Estadísticas</button>
+  </div>
+
+  <div class="content">
+    <div id="tab-inicio" class="fade-in">
+      <h2 class="section-title">Estado del negocio</h2>
+      <p class="section-sub" id="todayDate"></p>
+      <div class="stats" id="homeStats"></div>
+      <div class="panels">
+        <div class="panel">
+          <h3>⚠️ Clientes sin seguimiento</h3>
+          <p class="phint">Contactos que no registran actividad hace más de 90 días</p>
+          <div id="homeColdContacts"></div>
+        </div>
+        <div class="panel">
+          <h3>🕰️ Propiedades estancadas</h3>
+          <p class="phint">Publicadas hace más tiempo, candidatas a revisar</p>
+          <div id="homeStaleProps"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-propiedades" style="display:none">
+      <h2 class="section-title">Cartera de propiedades</h2>
+      <p class="section-sub">Tu inventario completo en tiempo real</p>
+      <div class="stats" id="propStats"></div>
+      <div class="filters">
+        <input type="text" id="propSearch" placeholder="Buscar dirección o zona..." oninput="renderProps()">
+        <button class="chip active" onclick="setPropFilter('todas',this)">Todas</button>
+        <button class="chip" onclick="setPropFilter('venta',this)">Venta</button>
+        <button class="chip" onclick="setPropFilter('alquiler',this)">Alquiler</button>
+      </div>
+      <div class="count" id="propCount"></div>
+      <div id="propGrid" class="grid"></div>
+    </div>
+
+    <div id="tab-contactos" style="display:none">
+      <h2 class="section-title">Contactos y clientes</h2>
+      <p class="section-sub">Tu base de relaciones comerciales</p>
+      <div class="stats" id="contactStats"></div>
+      <div class="filters">
+        <input type="text" id="contactSearch" placeholder="Buscar nombre o email..." oninput="renderContacts()">
+        <button class="chip active" onclick="setContactFilter('todos',this)">Todos</button>
+        <button class="chip" onclick="setContactFilter('frio',this)">Sin contacto +90 días</button>
+        <button class="chip" onclick="setContactFilter('reciente',this)">Recientes</button>
+      </div>
+      <div class="count" id="contactCount"></div>
+      <div id="contactList" class="contact-list"></div>
+    </div>
+
+    <div id="tab-estadisticas" style="display:none">
+      <h2 class="section-title">Estadísticas</h2>
+      <p class="section-sub">Distribución y composición de tu cartera</p>
+      <div id="statsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = '';
+let allProps = [];
+let allContacts = [];
+let propFilter = 'todas';
+let contactFilter = 'todos';
+
+async function fetchPage(endpoint, limit, offset) {
+  const res = await fetch(`/api/tokko?key=${API_KEY}&endpoint=${endpoint}&limit=${limit}&offset=${offset}`);
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+  return res.json();
+}
+
+async function fetchAll(endpoint, onProgress) {
+  const limit = 100;
+  let offset = 0, all = [], total = null;
+  do {
+    const data = await fetchPage(endpoint, limit, offset);
+    if (total === null) total = data.meta?.total_count || 0;
+    const objs = data.objects || [];
+    all = all.concat(objs);
+    offset += limit;
+    if (onProgress) onProgress(all.length, total);
+    if (objs.length === 0) break;
+  } while (all.length < total);
+  return all;
+}
+
+async function conectar() {
   const key = document.getElementById('apiInput').value.trim();
   if (!key) return;
   API_KEY = key;
